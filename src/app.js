@@ -17,14 +17,15 @@ app.use(compression());
 
 
 // init db
+require('./dbs/init.mongodb.js'); // khởi tạo mongodb connection
 
 
 // init routes
 app.get('/', (req, res, next) => {
-    const strCompression = 'Hello World!';
+    // const strCompression = 'Hello World!';
   return res.status(200).json({
     message: 'Welcome to the API',
-    metadata: strCompression.repeat(100000), // 10000 times
+    // metadata: strCompression.repeat(100000), // 10000 times
   });
 });
 

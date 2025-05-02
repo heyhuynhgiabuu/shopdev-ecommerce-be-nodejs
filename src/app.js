@@ -1,3 +1,4 @@
+require('dotenv').config(); // load env variables from .env file
 const express = require('express'); // import express
 const morgan = require('morgan'); // ghi log request
 const helmet = require('helmet'); // bảo mật cho ứng dụng express

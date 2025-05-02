@@ -1,11 +1,14 @@
 "use strict";
 
 const mongoose = require("mongoose");
+const {
+  db: { host, name, port },
+} = require("../configs/config.mongodb.js"); // import config mongodb
 const { countConnect } = require("../helpers/check.connect.js"); // import check connect helper
 const { checkOverloadConnection } = require("../helpers/check.connect.js"); // import check overload connection helper
 
 const connectString =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/shopdev";
+  process.env.MONGODB_URI || `mongodb://${host}:${port}/${name}`; // mongodb connection string
 
 class Database {
   constructor() {

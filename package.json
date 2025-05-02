@@ -11,9 +11,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.1.0",
+    "bcrypt": "^5.1.1",
+    "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
-    "mongoose": "^8.14.1"
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "mongoose": "^8.14.1",
+    "shopdev": "file:"
   },
   "devDependencies": {
     "compression": "^1.8.0",

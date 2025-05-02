@@ -30,8 +30,8 @@ class Database {
         waitQueueTimeoutMS: 5000, // max wait time for connection
       })
       .then(() => {
-        countConnect(); // check connection
-        checkOverloadConnection(); // check overload connection
+        // countConnect(); // check connection
+        // checkOverloadConnection(); // check overload connection
         console.log("MongoDB connected");
       })
       .catch((err) => console.error("MongoDB connection error:", err));

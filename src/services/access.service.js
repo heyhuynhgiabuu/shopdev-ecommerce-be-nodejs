@@ -6,6 +6,11 @@ const crypto = require("crypto");
 const KeyTokenService = require("./keyToken.service");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
+const {
+  BadRequestError,
+  ConflictRequestError,
+  InternalServerError,
+} = require("../core/error.response");
 
 // Define roles as static class property for better encapsulation
 class AccessService {
@@ -55,7 +60,6 @@ class AccessService {
     }
 
     const publicKeyObject = crypto.createPublicKey(publicKeyString);
-    console.log(`Public Key Object::`, publicKeyObject.export({ type: "spki", format: "pem" }));
 
     // Generate authentication tokens
     const tokens = await createTokenPair(
@@ -68,7 +72,10 @@ class AccessService {
       status: 201,
       message: "Shop created successfully",
       data: {
-        shop: getInfoData({ fields: ["_id", "name", "email"], object: newShop }),
+        shop: getInfoData({
+          fields: ["_id", "name", "email"],
+          object: newShop,
+        }),
         tokens: {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
@@ -85,23 +92,19 @@ class AccessService {
    * @param {string} param0.password - Shop password
    */
   static async signUp({ name, email, password }) {
+    a
     try {
       // Input validation
       if (!name || !email || !password) {
-        return {
-          status: 400,
-          message: "Missing required fields",
-        };
+        throw new BadRequestError(
+          "Missing required fields: name, email, password"
+        );
       }
 
       // Step 1: Check for existing shop
       const existingShop = await shopModel.findOne({ email }).lean();
       if (existingShop) {
-        return {
-          status: 409,
-          message: "Shop already exists",
-          data: existingShop,
-        };
+        throw new ConflictRequestError("Email already exists");
       }
 
       // Step 2: Create new shop
@@ -114,11 +117,7 @@ class AccessService {
       });
 
       if (!newShop) {
-        return {
-          status: 500,
-          message: "Failed to create shop",
-          metadata: null,
-        };
+        throw new ConflictRequestError("Failed to create shop");
       }
 
       // Step 3: Generate keypair for authentication
@@ -126,14 +125,8 @@ class AccessService {
 
       // Step 4: Create tokens and store keys
       return await this.createTokensAndKeys(newShop, publicKey, privateKey);
-
     } catch (error) {
-      console.error('SignUp Error::', error);
-      return {
-        status: 500,
-        message: "Internal Server Error",
-        error: error.message,
-      };
+      throw new InternalServerError(error.message || "Internal Server Error");
     }
   }
 }

@@ -19,11 +19,25 @@ app.use(express.json()); // parse json request body
 app.use(express.urlencoded({ extended: true })); // parse urlencoded request body
 
 // init db
-require("./dbs/init.mongodb.js"); // khởi tạo mongodb connection
+require("./dbs/init.mongodb.js"); // import init mongodb connection
 
 // init routes
-app.use("", require("./routes/index.js")); // import routes from index.js file
+app.use("/", require("./routes/index.js")); // import routes from index.js file
 
 // handling error
+app.use((req, res, next) => {
+  const error = new Error("Not Found"); 
+  error.status = 404;
+  next(error); 
+});
+
+app.use((error, req, res, next) => {
+  const statusCode = error.status || 500; 
+  return res.status(statusCode).json({
+    status: "error",
+    code: statusCode,
+    message: error.message || "Internal Server Error",
+  });
+});
 
 module.exports = app;

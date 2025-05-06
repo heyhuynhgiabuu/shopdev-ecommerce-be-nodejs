@@ -1,15 +1,16 @@
 "use strict";
 
 const AccessService = require("../services/access.service");
+const { CREATED } = require("../core/success.response");
 
 class AccessController {
   signup = async (req, res, next) => {
-    try {
-      console.log("Request body:", req.body); // Add logging to debug
-      const result = await AccessService.signUp(req.body);
-      return res.status(201).json(result);
-    } catch (error) {
-      next(error);
+    const result = await AccessService.signUp(req.body);
+    if (result.status === 201) {
+      return new CREATED({
+        message: "Create new shop success",
+        metadata: result.metadata,
+      }).send(res);
     }
   };
 }

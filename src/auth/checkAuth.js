@@ -1,8 +1,11 @@
 "use strict";
 
+const {
+  BadRequestError,
+  InternalServerError,
+  ForbiddenError,
+} = require("../core/error.response");
 const { findById } = require("../services/apiKey.service");
-
-
 
 const HEADER = {
   API_KEY: "x-api-key",
@@ -15,28 +18,18 @@ const apiKey = async (req, res, next) => {
     const key = req.headers[HEADER.API_KEY]?.toString(); // Get the api key from the request header
 
     if (!key) {
-      return res.status(401).json({
-        status: false,
-        message: "API key is missing",
-      });
+      throw new BadRequestError("API key not found", 401);
     }
 
     const apiKey = await findById(key); // Find the api key in the database
     if (!apiKey) {
-      return res.status(401).json({
-        status: false,
-        message: "Invalid API key",
-      });
+      throw new BadRequestError("API key not valid", 401);
     }
 
     req.objKey = objKey; // Set the api key in the request object
     return next(); // Call the next middleware
   } catch (error) {
-    return res.status(500).json({
-      status: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return new InternalServerError(error.message, 500); // Handle the error
   }
 };
 
@@ -46,10 +39,7 @@ const checkPermissions = (permissions) => {
     const userPermissions = req.objKey.permissions; // Get the permissions from the request object
 
     if (!userPermissions || !Array.isArray(userPermissions)) {
-      return res.status(403).json({
-        status: false,
-        message: "Permissions not found",
-      });
+      return new ForbiddenError("Permissions denied");
     }
 
     const hasPermission = permissions.every((permission) =>
@@ -57,17 +47,21 @@ const checkPermissions = (permissions) => {
     );
 
     if (!hasPermission) {
-      return res.status(403).json({
-        status: false,
-        message: "Permissions denied",
-      });
+      return new ForbiddenError("Permission denied");
     }
 
     return next(); // Call the next middleware
   };
 };
 
+const asyncHandler = (fn) => {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next); // Handle async errors
+  };
+};
+
 module.exports = {
   apiKey,
-  checkPermissions
+  checkPermissions,
+  asyncHandler,
 };

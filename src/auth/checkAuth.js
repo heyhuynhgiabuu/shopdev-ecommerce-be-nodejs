@@ -15,42 +15,37 @@ const HEADER = {
 // Middleware to check if the request has a valid API key
 const apiKey = async (req, res, next) => {
   try {
-    const key = req.headers[HEADER.API_KEY]?.toString(); // Get the api key from the request header
+    const key = req.headers[HEADER.API_KEY]?.toString();
 
     if (!key) {
-      throw new BadRequestError("API key not found", 401);
+      return next(new BadRequestError("API key not found"));
     }
 
-    const apiKey = await findById(key); // Find the api key in the database
-    if (!apiKey) {
-      throw new BadRequestError("API key not valid", 401);
+    const objKey = await findById(key);
+    if (!objKey) {
+      return next(new BadRequestError("API key not valid"));
     }
 
-    req.objKey = objKey; // Set the api key in the request object
-    return next(); // Call the next middleware
+    req.objKey = objKey; // Fix: was using undefined objKey variable
+    return next();
   } catch (error) {
-    return new InternalServerError(error.message, 500); // Handle the error
+    next(error); // Fix: use next(error) instead of returning new Error
   }
 };
 
 // Middleware to check if the user has the required permissions
-const checkPermissions = (permissions) => {
+const checkPermissions = (permission) => {
   return (req, res, next) => {
-    const userPermissions = req.objKey.permissions; // Get the permissions from the request object
-
-    if (!userPermissions || !Array.isArray(userPermissions)) {
-      return new ForbiddenError("Permissions denied");
+    if (!req.objKey || !req.objKey.permissions) {
+      return next(new ForbiddenError("Permission denied"));
     }
 
-    const hasPermission = permissions.every((permission) =>
-      userPermissions.includes(permission)
-    );
-
-    if (!hasPermission) {
-      return new ForbiddenError("Permission denied");
+    const validPermission = req.objKey.permissions.includes(permission);
+    if (!validPermission) {
+      return next(new ForbiddenError("Permission denied"));
     }
 
-    return next(); // Call the next middleware
+    return next();
   };
 };
 

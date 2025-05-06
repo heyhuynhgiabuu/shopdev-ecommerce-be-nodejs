@@ -6,11 +6,14 @@ const crypto = require("crypto");
 const KeyTokenService = require("./keyToken.service");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
+const { OK } = require("../core/success.response");
 const {
   BadRequestError,
   ConflictRequestError,
   InternalServerError,
+  UnauthorizedError,
 } = require("../core/error.response");
+const { findByEmail } = require("./shop.service");
 
 // Define roles as static class property for better encapsulation
 class AccessService {
@@ -41,47 +44,86 @@ class AccessService {
 
   /**
    * Create tokens and handle key storage
-   * @param {Object} newShop - Newly created shop
+   * @param {Object} shop - Shop object
    * @param {string} publicKey - Public key for token verification
    * @param {string} privateKey - Private key for token signing
    */
-  static async createTokensAndKeys(newShop, publicKey, privateKey) {
-    // Store public key in database
-    const publicKeyString = await KeyTokenService.createKeyToken({
-      userId: newShop._id,
-      publicKey,
-    });
+  static async createTokensAndKeys(shop, publicKey, privateKey) {
+    try {
+      // Generate tokens
+      const tokens = await createTokenPair(
+        { userId: shop._id, email: shop.email },
+        publicKey,
+        privateKey
+      );
 
-    if (!publicKeyString) {
+      // Store refresh token
+      const keyStore = await KeyTokenService.createKeyToken({
+        userId: shop._id,
+        publicKey,
+        refreshToken: tokens.refreshToken,
+      });
+
+      if (!keyStore) {
+        throw new InternalServerError("Token creation failed");
+      }
+
       return {
-        status: 500,
-        message: "Failed to store public key",
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       };
+    } catch (error) {
+      throw new InternalServerError("Could not create tokens");
     }
+  }
 
-    const publicKeyObject = crypto.createPublicKey(publicKeyString);
+  /**
+   * Log in an existing shop
+   * @param {Object} param0 - Shop credentials
+   * @param {string} param0.email - Shop email
+   * @param {string} param0.password - Shop password
+   */
+  static async logIn({ email, password }) {
+    try {
+      // Validate input
+      if (!email || !password) {
+        throw new BadRequestError("Email and password are required");
+      }
 
-    // Generate authentication tokens
-    const tokens = await createTokenPair(
-      { userId: newShop._id, email: newShop.email },
-      publicKeyObject,
-      privateKey
-    );
+      // Find shop by email
+      const shop = await findByEmail({ email });
+      if (!shop) {
+        throw new BadRequestError("Shop not registered");
+      }
 
-    return {
-      status: 201,
-      message: "Shop created successfully",
-      data: {
-        shop: getInfoData({
-          fields: ["_id", "name", "email"],
-          object: newShop,
-        }),
-        tokens: {
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
+      // Check password
+      const match = await bcrypt.compare(password, shop.password);
+      if (!match) {
+        throw new UnauthorizedError("Authentication failed");
+      }
+
+      // Generate keypair
+      const { privateKey, publicKey } = this.generateKeyPair();
+
+      // Create tokens
+      const tokens = await this.createTokensAndKeys(
+        shop,
+        publicKey,
+        privateKey
+      );
+
+      return {
+        metadata: {
+          shop: getInfoData({
+            fields: ["_id", "name", "email"],
+            object: shop,
+          }),
+          tokens,
         },
-      },
-    };
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -92,23 +134,20 @@ class AccessService {
    * @param {string} param0.password - Shop password
    */
   static async signUp({ name, email, password }) {
-    a
     try {
-      // Input validation
+      // Validate input
       if (!name || !email || !password) {
-        throw new BadRequestError(
-          "Missing required fields: name, email, password"
-        );
+        throw new BadRequestError("Missing required fields");
       }
 
-      // Step 1: Check for existing shop
-      const existingShop = await shopModel.findOne({ email }).lean();
-      if (existingShop) {
-        throw new ConflictRequestError("Email already exists");
+      // Check existing shop
+      const holderShop = await shopModel.findOne({ email }).lean();
+      if (holderShop) {
+        throw new ConflictRequestError("Shop already registered!");
       }
 
-      // Step 2: Create new shop
       const hashedPassword = await bcrypt.hash(password, 10);
+
       const newShop = await shopModel.create({
         name,
         email,
@@ -117,16 +156,23 @@ class AccessService {
       });
 
       if (!newShop) {
-        throw new ConflictRequestError("Failed to create shop");
+        throw new InternalServerError("Shop creation failed");
       }
 
-      // Step 3: Generate keypair for authentication
+      // Create keys and tokens
       const { privateKey, publicKey } = this.generateKeyPair();
+      const tokens = await this.createTokensAndKeys(
+        newShop,
+        publicKey,
+        privateKey
+      );
 
-      // Step 4: Create tokens and store keys
-      return await this.createTokensAndKeys(newShop, publicKey, privateKey);
+      return {
+        code: 201,
+        metadata: tokens,
+      };
     } catch (error) {
-      throw new InternalServerError(error.message || "Internal Server Error");
+      throw error;
     }
   }
 }

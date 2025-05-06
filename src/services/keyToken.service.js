@@ -1,25 +1,36 @@
-'use strict'
+"use strict";
 
-const keytokenModel = require("../models/keytoken.model");
+const keyTokenModel = require("../models/keyToken.model");
 
 class KeyTokenService {
+  static async createKeyToken({ userId, publicKey, refreshToken }) {
+    try {
+      // Convert publicKey to string if it isn't already
+      const publicKeyString = publicKey.toString();
 
-    static createKeyToken = async ({ userId, publicKey }) => {
-        try {
-            const publicKeyString = publicKey.toString();
-            const tokens = await keytokenModel.create({
-                user: userId,
-                publicKey: publicKeyString,
-            })
+      const filter = { user: userId };
+      const update = {
+        publicKey: publicKeyString,
+        refreshTokensUsed: [],
+        refreshToken,
+      };
+      const options = { upsert: true, new: true };
 
-            return tokens ? tokens.publicKey : null;
-        } catch (error) {
-            console.error("Error in createKeyToken:", error);
-            throw new Error("Failed to create key token");
-            
-        }
+      const tokens = await keyTokenModel.findOneAndUpdate(
+        filter,
+        update,
+        options
+      );
+
+      if (!tokens) {
+        throw new Error("Token creation failed");
+      }
+
+      return tokens;
+    } catch (error) {
+      throw new Error(`Create KeyToken error: ${error.message}`);
     }
-
+  }
 }
 
-module.exports = KeyTokenService
+module.exports = KeyTokenService;

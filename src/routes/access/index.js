@@ -6,6 +6,9 @@ const accessController = require("../../controllers/access.controller"); // Impo
 const { asyncHandler } = require("../../auth/checkAuth");
 const router = express.Router(); // Import the router from express
 
+// login route
+router.post("/shop/login", asyncHandler(accessController.login)); 
+
 // signup route
 router.post("/shop/signup", asyncHandler(accessController.signup));
 

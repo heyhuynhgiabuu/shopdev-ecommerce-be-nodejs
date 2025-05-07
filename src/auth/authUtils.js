@@ -104,7 +104,20 @@ const authentication = asyncHandler(async (req, res, next) => {
   }
 });
 
+const verifyJWT = async (token, publicKey) => {
+  try {
+    const decoded = jwt.verify(token, publicKey, {
+      algorithms: ["RS256"],
+    });
+    return decoded;
+  } catch (error) {
+    throw new UnauthorizedError(`Token verification failed: ${error.message}`);
+  }
+}
+
+
 module.exports = {
   createTokenPair,
   authentication,
+  verifyJWT,
 };

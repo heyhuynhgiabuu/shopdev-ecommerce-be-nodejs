@@ -4,7 +4,7 @@ const shopModel = require("../models/shop.model");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const KeyTokenService = require("./keyToken.service");
-const { createTokenPair } = require("../auth/authUtils");
+const { createTokenPair, verifyJWT } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
 const { OK } = require("../core/success.response");
 const {
@@ -12,8 +12,11 @@ const {
   ConflictRequestError,
   InternalServerError,
   UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
 } = require("../core/error.response");
 const { findByEmail } = require("./shop.service");
+const { StatusCodes } = require("../utils/statusCodes");
 
 // Define roles as static class property for better encapsulation
 class AccessService {
@@ -194,6 +197,72 @@ class AccessService {
       return {
         code: 201,
         metadata: tokens,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @param {string} refreshToken - Refresh token
+   */
+  static async handlerRefreshToken(refreshToken) {
+    try {
+      // Check for refresh token
+      if (!refreshToken) {
+        throw new BadRequestError("Refresh token is required");
+      }
+
+      // Check if refresh token was used
+      const foundToken = await KeyTokenService.findByRefreshTokensUsed(
+        refreshToken
+      );
+      if (foundToken) {
+        // Delete key and reject if token was already used
+        await KeyTokenService.removeKeyById(foundToken.user);
+        throw new ForbiddenError("Something wrong happened! Please relogin");
+      }
+
+      // Find current refresh token
+      const holderToken = await KeyTokenService.findByRefreshToken(
+        refreshToken
+      );
+      if (!holderToken) {
+        throw new UnauthorizedError("Shop not registered");
+      }
+
+      // Verify refresh token
+      const decoded = await verifyJWT(refreshToken, holderToken.publicKey);
+
+      // Find shop
+      const shop = await findByEmail({ email: decoded.email });
+      if (!shop) {
+        throw new NotFoundError("Shop not found");
+      }
+
+      // Create new token pair
+      const { privateKey, publicKey } = AccessService.generateKeyPair();
+      const tokens = await createTokenPair(
+        { userId: shop._id, email: shop.email },
+        publicKey,
+        privateKey
+      );
+
+      // Update token store
+      await KeyTokenService.createKeyToken({
+        userId: shop._id,
+        publicKey,
+        refreshToken: tokens.refreshToken,
+        refreshTokensUsed: [refreshToken], // Add old token to used list
+      });
+
+      return {
+        code: StatusCodes.OK,
+        metadata: {
+          shop: getInfoData({ fields: ["_id", "name", "email"], object: shop }),
+          tokens,
+        },
       };
     } catch (error) {
       throw error;

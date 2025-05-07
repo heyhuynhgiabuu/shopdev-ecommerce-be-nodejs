@@ -82,6 +82,32 @@ class AccessController {
       next(error);
     }
   };
+
+  /**
+   * Handles user refresh token
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  refreshToken = async (req, res, next) => {
+    try {
+      // Get refresh token from request body
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        throw new BadRequestError("Missing refresh token");
+      }
+
+      // Call the handler method for refresh token
+      const result = await AccessService.handlerRefreshToken(refreshToken);
+
+      return new OK({
+        message: "Refresh token successful",
+        metadata: result.metadata,
+      }).send(res);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 module.exports = new AccessController();

@@ -1,9 +1,27 @@
 @url_dev = http://localhost:3010/v1/api
+@apikey = 20d10158c32b336eacb21e56fe392e1f12eb045bdb3c22b336c19acb68e2fb8308e6a9285a079ada9b57d584d0839632e9eee212b3d34858fa7bb1a9806575ac
 
-### login
+
+### 1. First login to get new tokens
 POST {{url_dev}}/shop/login HTTP/1.1
 content-type: application/json
-x-api-key: 20d10158c32b336eacb21e56fe392e1f12eb045bdb3c22b336c19acb68e2fb8308e6a9285a079ada9b57d584d0839632e9eee212b3d34858fa7bb1a9806575ac
+x-api-key: {{apikey}}
+
+{
+  "email": "shopowner14@gmail.com",
+  "password": "shopowner123"
+}
+
+### 2. Copy the tokens from login response and update these variables
+@client_id = 681a30936b5abdb92bd3ad37
+@access_token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODFhMzA5MzZiNWFiZGI5MmJkM2FkMzciLCJlbWFpbCI6InNob3Bvd25lcjE0QGdtYWlsLmNvbSIsInN1YiI6IjY4MWEzMDkzNmI1YWJkYjkyYmQzYWQzNyIsImlhdCI6MTc0NjU1NDk1OSwiZXhwIjoxNzQ2NTU4NTU5LCJhdWQiOiJhcGkuZXhhbXBsZS5jb20iLCJpc3MiOiJleGFtcGxlLmNvbSJ9.Wo1BFIOBEI4g_QeOKN17fkn55TpnzlXihjTdrm4doB9nyo3NeSvoQJF5EMxgqYsodo7SSyxG6qrb3C_tMmUnQUi6I9M0bGWQw1lSsJSsX_nWaFxTgYulleoswu9yRyOXLsJVHDoWtdMdY2TbGJKG3ud-J-1zK7IZ0zUL7Fl85sjLSgVrqVKCPGZthyJ4ExFtHs9rLqiOUHku0ZQmsitOrNucRg9-Y4FHX0WRmLG20T2SZ2UQ_6DAQOQLYYywnCvxjDUKFFIvqcAHODP8TPhYtwPbxdYgumxdI9tCdTl1XtzrwGtQ0ZWd6AnQqqYbwsxj7_MGO9Ni9sO_19yJFwB0-3h7TheFkpiu1OC91AhlIsr_YTTgjZEVIh58lffF1wkChaLpWypBPp2wCAAWyCj4f3nedAxJbPFXxi8W2ypGOTtgwIrvC8QlF597RwFeKb0huSiAiScUkfVRturinXccygKvPPkjG1Rr9HKLJyxV1vM50BRYb4VxhNOyTmaHyRPQb_ak8ScCAdp283BkaVlINFk7Oyqpe9nVPkYpIrPG3gU25QOvNZzJ_vqkmoS3ymppAghHBMLDxOWlpL54t-mNcjfXZtLvs5PJqxFfjjr_5LzAVawSDRhZNJzfYkMVngr0ZurcOE0gx2ZeRP_Xbd3exPtsLL2TwlzTMasLcPOcctc
+
+### 3. Then try logout
+POST {{url_dev}}/shop/logout HTTP/1.1
+content-type: application/json
+x-api-key: {{apikey}}
+x-client-id: {{client_id}}
+authorization: Bearer {{access_token}}
 
 {
   "email": "shopowner14@gmail.com",
@@ -13,7 +31,7 @@ x-api-key: 20d10158c32b336eacb21e56fe392e1f12eb045bdb3c22b336c19acb68e2fb8308e6a
 ### signup
 POST {{url_dev}}/shop/signup HTTP/1.1
 content-type: application/json
-x-api-key: 20d10158c32b336eacb21e56fe392e1f12eb045bdb3c22b336c19acb68e2fb8308e6a9285a079ada9b57d584d0839632e9eee212b3d34858fa7bb1a9806575ac
+x-api-key: {{apikey}}
 
 {
   "name": "Shop Owner 14",

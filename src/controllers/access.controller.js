@@ -58,6 +58,30 @@ class AccessController {
       next(error); // Pass error to middleware
     }
   };
+
+  /**
+   * Handles user logout
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  logout = async (req, res, next) => {
+    try {
+      const keyStore = req.keyStore;
+      if (!keyStore) {
+        throw new UnauthorizedError("Invalid request");
+      }
+
+      await AccessService.logOut(keyStore);
+
+      return new OK({
+        message: "Logout successful",
+        metadata: null,
+      }).send(res);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 module.exports = new AccessController();

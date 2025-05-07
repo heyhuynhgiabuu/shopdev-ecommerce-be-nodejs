@@ -78,6 +78,23 @@ class AccessService {
   }
 
   /**
+   * Log out a shop by removing its refresh token from the database
+   * @param {Object} keyStore - KeyStore object
+   * @returns {Object} - Success message
+   */
+  static async logOut(keyStore) {
+    try {
+      const delKey = await KeyTokenService.removeKeyById(keyStore.user);
+      if (!delKey) {
+        throw new InternalServerError("Logout failed");
+      }
+      return delKey;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Log in an existing shop
    * @param {Object} param0 - Shop credentials
    * @param {string} param0.email - Shop email
@@ -102,15 +119,22 @@ class AccessService {
         throw new UnauthorizedError("Authentication failed");
       }
 
-      // Generate keypair
+      // Generate new keypair
       const { privateKey, publicKey } = this.generateKeyPair();
 
-      // Create tokens
-      const tokens = await this.createTokensAndKeys(
-        shop,
+      // Create tokens with consistent subject
+      const tokens = await createTokenPair(
+        { userId: shop._id, email: shop.email },
         publicKey,
         privateKey
       );
+
+      // Store public key and refresh token
+      await KeyTokenService.createKeyToken({
+        userId: shop._id,
+        publicKey: publicKey,
+        refreshToken: tokens.refreshToken,
+      });
 
       return {
         metadata: {

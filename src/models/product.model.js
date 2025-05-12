@@ -58,6 +58,11 @@ const clothingSchema = new Schema(
     },
     size: String,
     material: String,
+    product_shop: {
+      type: Schema.Types.ObjectId,
+      ref: "Shop",
+      required: true,
+    },
   },
   {
     timestamps: true,
@@ -74,6 +79,11 @@ const electronicSchema = new Schema(
     },
     model: String,
     color: String,
+    product_shop: {
+      type: Schema.Types.ObjectId,
+      ref: "Shop",
+      required: true,
+    },
   },
   {
     timestamps: true,
@@ -86,6 +96,13 @@ const furnitureSchema = new Schema(
   {
     brand: {
       type: String,
+      required: true,
+    },
+    size: String,
+    material: String,
+    product_shop: {
+      type: Schema.Types.ObjectId,
+      ref: "Shop",
       required: true,
     },
   },
